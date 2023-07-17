@@ -91,7 +91,7 @@ func (r *Repository) getFollowersFromAPI(nextMaxId string) ([]User, string, erro
 func (r *Repository) getFollowingFromAPI(count int) ([]User, error) {
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/friendships/%s/following/?count=192&max_id=%d", IG_URL_BASE, config.Config.InstagramUserID, count*192), nil)
 	if err != nil {
-		logrus.Error("Cannot build change order pya body", err)
+		logrus.Error("Cannot build request following body", err)
 		return nil, err
 	}
 	cookie, err := base64.StdEncoding.DecodeString(config.Config.Base64InstagramCookie)

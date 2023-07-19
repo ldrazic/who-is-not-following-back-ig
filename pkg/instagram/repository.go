@@ -27,44 +27,59 @@ type Storage interface {
 
 func (r *Repository) GetFollowing() ([]User, error) {
 	var following []User
-	count := 1
+	countAmount := 192
+	lastId := countAmount
 	for {
-		response, err := r.getFollowingFromAPI(count)
+		response, err := r.getFollowingFromAPI(countAmount, lastId)
 		if err != nil {
 			logrus.Error("Error in response getting following", err)
 			return nil, err
 		}
 		if len(response) == 0 {
-			break
+			if countAmount > 3 {
+				countAmount = countAmount / 2
+			} else {
+				break
+			}
 		}
-		count++
 		following = append(following, response...)
+		lastId = len(following) + countAmount
 	}
 	return following, nil
 }
 func (r *Repository) GetFollowers() ([]User, error) {
 	var followers []User
 	nextMaxId := ""
+	countAmount := 192
 	for {
-		response, responseNextMaxId, err := r.getFollowersFromAPI(nextMaxId)
+		changeMaxId := true
+		response, responseNextMaxId, err := r.getFollowersFromAPI(nextMaxId, countAmount)
 		if err != nil {
 			logrus.Error("Error in response getting following", err)
 			return nil, err
 		}
-		nextMaxId = responseNextMaxId
-		if len(response) == 0 || nextMaxId == "" {
-			break
+		if responseNextMaxId == "" {
+			if countAmount > 3 {
+				countAmount = countAmount / 2
+				changeMaxId = false
+			} else {
+				break
+			}
+		} else {
+			followers = append(followers, response...)
 		}
-		followers = append(followers, response...)
+		if changeMaxId {
+			nextMaxId = responseNextMaxId
+		}
 	}
 	return followers, nil
 }
-func (r *Repository) getFollowersFromAPI(nextMaxId string) ([]User, string, error) {
+func (r *Repository) getFollowersFromAPI(nextMaxId string, countAmount int) ([]User, string, error) {
 	url := ""
 	if nextMaxId != "" {
-		url = fmt.Sprintf("%s/friendships/%s/followers/?count=192&max_id=%s", IG_URL_BASE, config.Config.InstagramUserID, nextMaxId)
+		url = fmt.Sprintf("%s/friendships/%s/followers/?count=%d&max_id=%s", IG_URL_BASE, config.Config.InstagramUserID, countAmount, nextMaxId)
 	} else {
-		url = fmt.Sprintf("%s/friendships/%s/followers/?count=192&search_surface=follow_list_page", IG_URL_BASE, config.Config.InstagramUserID)
+		url = fmt.Sprintf("%s/friendships/%s/followers/?count=%d&search_surface=follow_list_page", IG_URL_BASE, config.Config.InstagramUserID, countAmount)
 	}
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -88,8 +103,8 @@ func (r *Repository) getFollowersFromAPI(nextMaxId string) ([]User, string, erro
 	}
 	return nil, "", errors.New("cannot get response error getting following")
 }
-func (r *Repository) getFollowingFromAPI(count int) ([]User, error) {
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/friendships/%s/following/?count=192&max_id=%d", IG_URL_BASE, config.Config.InstagramUserID, count*192), nil)
+func (r *Repository) getFollowingFromAPI(countAmount, lastId int) ([]User, error) {
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/friendships/%s/following/?count=%d&max_id=%d", IG_URL_BASE, config.Config.InstagramUserID, countAmount, lastId), nil)
 	if err != nil {
 		logrus.Error("Cannot build request following body", err)
 		return nil, err

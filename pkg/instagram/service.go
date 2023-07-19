@@ -2,6 +2,7 @@ package instagram
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/sirupsen/logrus"
 )
@@ -18,10 +19,12 @@ func (s *Service) CompareFollowingThatDoesntFollowBack() {
 	following, err := s.igRepo.GetFollowing()
 	if err != nil {
 		logrus.Error("error getting following", err)
+		log.Fatal(err)
 	}
 	followers, err := s.igRepo.GetFollowers()
 	if err != nil {
 		logrus.Error("error getting followers", err)
+		log.Fatal(err)
 	}
 	result := FindUsersNotInFollowers(following, followers)
 	fmt.Print("Instagram following that doesnt follows back")
